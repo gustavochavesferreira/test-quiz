@@ -34,3 +34,114 @@ def test_create_choice():
     assert len(question.choices) == 1
     assert choice.text == 'a'
     assert not choice.is_correct
+
+
+
+
+
+
+def test_rejects_choice_with_invalid_text():
+    question = Question(title='q1')
+
+    with pytest.raises(Exception, match='Text cannot be empty'):
+        question.add_choice('')
+    with pytest.raises(Exception,match='Text cannot be longer than 100 characters'):
+        question.add_choice('a' * 101)
+
+    assert question.choices == []
+
+
+def test_removes_choice_with_existing_id():
+    question = Question(title='q1')
+    removed_choice = question.add_choice('a')
+    remaining_choice = question.add_choice('b')
+
+    question.remove_choice_by_id(removed_choice.id)
+
+    assert question.choices == [remaining_choice]
+
+
+def test_rejects_removal_with_unknown_choice_id():
+    question = Question(title='q1')
+    choice = question.add_choice('a')
+
+    with pytest.raises(Exception, match='Invalid choice id 999'):
+        question.remove_choice_by_id(999)
+
+    assert question.choices == [choice]
+
+
+def test_removes_all_five_choices():
+    question = Question(title='q1')
+    question.add_choice('a')
+    question.add_choice('b')
+    question.add_choice('c')
+    question.add_choice('d')
+    question.add_choice('e')
+
+    question.remove_all_choices()
+
+    assert question.choices == []
+
+
+def test_creates_choices_as_incorrect_by_default():
+    question = Question(title='q1')
+
+    first_choice = question.add_choice('a')
+    second_choice = question.add_choice('b')
+
+    assert first_choice.is_correct is False
+    assert second_choice.is_correct is False
+
+
+def test_marks_only_requested_choices_as_correct():
+    question = Question(title='q1')
+    first_correct_choice = question.add_choice('a')
+    incorrect_choice = question.add_choice('b')
+    second_correct_choice = question.add_choice('c')
+
+    question.set_correct_choices([first_correct_choice.id, second_correct_choice.id])
+
+    assert first_correct_choice.is_correct is True
+    assert incorrect_choice.is_correct is False
+    assert second_correct_choice.is_correct is True
+
+
+def test_returns_empty_list_when_all_selected_choices_are_incorrect():
+    question = Question(title='q1', max_selections=2)
+    question.add_choice('a', True)
+    first_incorrect_choice = question.add_choice('b', False)
+    second_incorrect_choice = question.add_choice('c', False)
+
+    result = question.correct_selected_choices([first_incorrect_choice.id,second_incorrect_choice.id])
+
+    assert result == []
+
+
+def test_ignores_unknown_id_when_correcting_selected_choices():
+    question = Question(title='q1')
+    question.add_choice('a', True)
+
+    result = question.correct_selected_choices([999])
+
+    assert result == []
+
+
+def test_rejects_unknown_id_when_setting_correct_choices():
+    question = Question(title='q1')
+    choice = question.add_choice('a')
+
+    with pytest.raises(Exception, match='Invalid choice id 999'):
+        question.set_correct_choices([999])
+
+    assert choice.is_correct is False
+
+
+def test_rejects_more_selections_than_allowed():
+    question = Question(title='q1', max_selections=2)
+    first_choice = question.add_choice('a')
+    second_choice = question.add_choice('b')
+    third_choice = question.add_choice('c')
+
+    with pytest.raises(Exception, match='Cannot select more than 2 choices'):
+        question.correct_selected_choices([first_choice.id, second_choice.id, third_choice.id])
