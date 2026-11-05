@@ -145,3 +145,29 @@ def test_rejects_more_selections_than_allowed():
 
     with pytest.raises(Exception, match='Cannot select more than 2 choices'):
         question.correct_selected_choices([first_choice.id, second_choice.id, third_choice.id])
+
+@pytest.fixture
+def question_with_correct_and_incorrect_choices():
+    question = Question(title='q1', max_selections=2)
+    correct_choice_1 = question.add_choice('a', True)
+    correct_choice_2 = question.add_choice('b', True)
+    incorrect_choice = question.add_choice('c', False)
+    return question, correct_choice_1, correct_choice_2, incorrect_choice
+
+
+def test_returns_all_selected_correct_choice_ids(question_with_correct_and_incorrect_choices):
+    question, correct_choice_1, correct_choice_2, _ = (question_with_correct_and_incorrect_choices)
+
+    result = question.correct_selected_choices([correct_choice_1.id,correct_choice_2.id])
+
+    assert result == [correct_choice_1.id, correct_choice_2.id]
+
+
+def test_returns_only_correct_choice_ids_from_mixed_selection(
+    question_with_correct_and_incorrect_choices
+):
+    question, correct_choice, _, incorrect_choice = (question_with_correct_and_incorrect_choices)
+
+    result = question.correct_selected_choices([correct_choice.id, incorrect_choice.id])
+
+    assert result == [correct_choice.id]
